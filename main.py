@@ -14,9 +14,9 @@ import sys
 import time
 
 #百度API语音接口
-APP_ID = '19496104'
-API_KEY = 'U5GgCantAC8euSH9hplgU7E2'
-SECRET_KEY = 'yeeurU89BvMnqR3TyxLFGYOVUF1KgPUH'
+APP_ID = 'you'
+API_KEY = 'no'
+SECRET_KEY = 'num'
 client = AipSpeech(APP_ID, API_KEY, SECRET_KEY)
 #字体
 FONT_URL = './font/Alibaba-PuHuiTi-Heavy.ttf'
