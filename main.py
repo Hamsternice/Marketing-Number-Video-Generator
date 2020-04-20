@@ -6,14 +6,17 @@ from moviepy.editor import *
 from moviepy.audio.fx import all
 from moviepy.video.tools.subtitles import SubtitlesClip
 import os
-import time
 import eyed3
 import random
 from aip import AipSpeech
+import easygui as g
+import sys
+import time
+
 #百度API语音接口
-APP_ID = '你的ID'
-API_KEY = '你的KEY'
-SECRET_KEY = '自己需要在百度申请'
+APP_ID = '19496104'
+API_KEY = 'U5GgCantAC8euSH9hplgU7E2'
+SECRET_KEY = 'yeeurU89BvMnqR3TyxLFGYOVUF1KgPUH'
 client = AipSpeech(APP_ID, API_KEY, SECRET_KEY)
 #字体
 FONT_URL = './font/Alibaba-PuHuiTi-Heavy.ttf'
@@ -40,13 +43,11 @@ def make_music(text,spd):
     i = 1
     for text in text_i:
         result = client.synthesis(text=text, options={'vol': 5, 'per': 4, 'spd': spd})
-        if not isinstance(result, dict):
-            with open('audio.mp3', 'wb') as fy:
-                fy.write(result)
-            fy.close()
-        else:
-            print(dict)
+        with open('audio.mp3', 'wb') as fy:
+            fy.write(result)
+        fy.close()
         time.sleep(0.5)
+
         # 加入独白
         audio_clip = AudioFileClip('audio.mp3').set_start(start)
         music_clip = CompositeAudioClip([music_clip, audio_clip])
@@ -72,36 +73,28 @@ def make_music(text,spd):
     f.close()
     return (music_clip,start)
 
-def make_video(text):
-    spd = int(input('语句速度（0~9）:'))
-    while 1:
-        if spd < 0 or spd > 9:
-            spd = int(input('重新输入语句速度（0~9）:'))
-        else:
-            break
+def make_video(text,spd):
     music_clip,end= make_music(text, spd)
-
     #打开srt字幕文件
-    generator = lambda txt: TextClip(txt, font = FONT_URL,fontsize=30, color='white')
+    generator = lambda txt: TextClip(txt, font = FONT_URL,fontsize=40, color='white')
     sub = SubtitlesClip("test.srt",generator)
 
     end += 1
     #随机挑选素材中的视频部分
     a = []
-    name = random.randint(1, 4)
+    Name = 39    #视频个数 按1~n排列  .mp4结尾
+    N= 6        # 随机选取的视频个数  最好总时长能达到1分钟   这里每个素材时长10s
+    name = random.randint(1, Name)
     a.append(name)
-    for i in range(2,4):
+    background_clip = VideoFileClip('movie/' + str(name) + '.mp4')
+    for i in range(N-1):
         while 1:
-            name = random.randint(1, 4)
+            name = random.randint(1, Name)
             if name not in a:
                 break
         a.append(name)
-    clip_1 = VideoFileClip('movie/' + str(a[0]) + '.mp4').subclip(0, random.randint(15,20))
-    clip_2 = VideoFileClip('movie/' + str(a[1]) + '.mp4').subclip(0, random.randint(15,20))
-    clip_3 = VideoFileClip('movie/' + str(a[2]) + '.mp4').subclip(0, random.randint(15,20))
-
-    #合并3个视频片段，并加入声音
-    background_clip = concatenate_videoclips([clip_1,clip_2,clip_3])
+        clip_temp = VideoFileClip('movie/' + str(name) + '.mp4')
+        background_clip = concatenate_videoclips([background_clip,clip_temp])
     background_clip = background_clip.set_audio(music_clip)
     background_clip = CompositeVideoClip([background_clip, sub.set_position(('center','bottom'))]).subclip(0,end)
     return background_clip
@@ -120,13 +113,21 @@ def del_temp():
             print('文件已消失，无需删除。')
 
 if __name__ == '__main__':
+    title = "营销号视频制作V1.00~仓鼠二号制"
     text = []
-    temp = input('输入主体:')
+    temp = g.enterbox("输入主体:",title)
     text.append(temp)
-    temp = input('输入事件:')
+    temp = g.enterbox('输入事件:', title)
     text.append(temp)
-    temp = input('输入原因:')
+    temp = g.enterbox('输入原因:', title)
     text.append(temp)
-    out_video(make_video(text))
+    spd = g.integerbox('输入语句速度（0~9）:', title)
+    if spd < 0 :
+        spd = 0
+    elif spd>9:
+        spd = 9
+    g.msgbox('点击OK继续运行程序，请耐心等待，如长时间无响应关闭重启软件', title)
+    out_video(make_video(text,spd))
     del_temp()
+    g.msgbox('输出完成，请查看"out.mp4"文件',title)
 
