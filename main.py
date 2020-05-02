@@ -1,7 +1,6 @@
 # /usr/bin/env python
 # -*- coding:utf-8 -*-
-# author: Handsome Lu  time:2020/4/19
-
+# author: Handsome Lu  time:2020/4/24
 from moviepy.editor import *
 from moviepy.audio.fx import all
 from moviepy.video.tools.subtitles import SubtitlesClip
@@ -9,17 +8,27 @@ import os
 import eyed3
 import random
 from aip import AipSpeech
-import easygui as g
-import sys
 import time
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow
+import back_ui
+import threading
 
 #百度API语音接口
-APP_ID = 'you'
-API_KEY = 'no'
-SECRET_KEY = 'num'
+APP_ID = '1'
+API_KEY = '1'
+SECRET_KEY = ''
+
 client = AipSpeech(APP_ID, API_KEY, SECRET_KEY)
 #字体
 FONT_URL = './font/Alibaba-PuHuiTi-Heavy.ttf'
+
+
+def get_music(text,spd,voice):
+    result = client.synthesis(text=text, options={'vol': 5, 'per': voice, 'spd': spd})
+    with open('audio.mp3', 'wb') as fy:
+        fy.write(result)
+    fy.close()
 
 def make_text(text_1,text_2,text_3):
     text_i0 = '欢迎大家来到，看了也没用频道'
@@ -34,18 +43,20 @@ def make_text(text_1,text_2,text_3):
     text_i = [text_i0,text_i1,text_i2,text_i3,text_i4,text_i5,text_i6,text_i7,text_i8]
     return text_i
 
-def make_music(text,spd):
+def make_music(text,spd,back_music,voice):
     start = 2
     delay = 0.5
-    music_clip = AudioFileClip('back.mp3').volumex(0.5)
+    if back_music < 1 or back_music > 6:
+        music_name = 'music/'+ str(random.randint(1,6))+'.mp3'
+    else:
+        music_name = 'music/' + str(back_music) + '.mp3'
+    music_clip = AudioFileClip(music_name).volumex(0.6)
+
     text_i = make_text(text[0],text[1],text[2])
     str_n = ''
     i = 1
     for text in text_i:
-        result = client.synthesis(text=text, options={'vol': 5, 'per': 4, 'spd': spd})
-        with open('audio.mp3', 'wb') as fy:
-            fy.write(result)
-        fy.close()
+        get_music(text,spd,voice)
         time.sleep(0.5)
 
         # 加入独白
@@ -73,8 +84,8 @@ def make_music(text,spd):
     f.close()
     return (music_clip,start)
 
-def make_video(text,spd):
-    music_clip,end= make_music(text, spd)
+def make_video(text,spd,back_music,voice):
+    music_clip,end= make_music(text, spd,back_music,voice)
     #打开srt字幕文件
     generator = lambda txt: TextClip(txt, font = FONT_URL,fontsize=40, color='white')
     sub = SubtitlesClip("test.srt",generator)
@@ -112,22 +123,36 @@ def del_temp():
         else:
             print('文件已消失，无需删除。')
 
-if __name__ == '__main__':
-    title = "营销号视频制作V1.00~仓鼠二号制"
-    text = []
-    temp = g.enterbox("输入主体:",title)
-    text.append(temp)
-    temp = g.enterbox('输入事件:', title)
-    text.append(temp)
-    temp = g.enterbox('输入原因:', title)
-    text.append(temp)
-    spd = g.integerbox('输入语句速度（0~9）:', title)
-    if spd < 0 :
-        spd = 0
-    elif spd>9:
-        spd = 9
-    g.msgbox('点击OK继续运行程序，请耐心等待，如长时间无响应关闭重启软件', title)
-    out_video(make_video(text,spd))
-    del_temp()
-    g.msgbox('输出完成，请查看"out.mp4"文件',title)
 
+class myThread(threading.Thread):
+    def __init__(self, threadID):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+    def run(self):
+        text1 = ui.lineEdit.text()
+        text2 = ui.lineEdit_2.text()
+        text3 = ui.lineEdit_3.text()
+        text = [text1, text2, text3]
+        spd = ui.spinBox.value()
+        voice = ui.comboBox.currentIndex()
+        back_music = ui.comboBox_2.currentIndex()
+        out_video(make_video(text, spd, back_music, voice))
+        del_temp()
+        ui.pushButton.setText('开始')
+        ui.pushButton.setDisabled(0)
+
+def work():
+    TT = myThread(1)
+    ui.pushButton.setDisabled(1)
+    ui.pushButton.setText('请等待，长时间无反应重启软件。。。。')
+    myThread(1).start()
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    MainWindow = QMainWindow()
+    ui = back_ui.Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    ui.pushButton.clicked.connect(work)
+    sys.exit(app.exec_())
